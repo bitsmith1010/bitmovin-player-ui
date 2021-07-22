@@ -108,8 +108,6 @@ export class SeekBar extends Component<SeekBarConfig> {
   private playbackPositionPercentage = 0;
   private intervalMaxSeek = 36000; // seconds
   private targetCompoundSeek = 0;
-  private nextIntervalCompoundSeekBound: 
-    (event: PlayerEventBase) => void; 
   private smoothPlaybackPositionUpdater: Timeout;
   private pausedTimeshiftUpdater: Timeout;
 
@@ -345,10 +343,10 @@ export class SeekBar extends Component<SeekBarConfig> {
         const displacementCurrentToTarget
           = this.targetCompoundSeek - currentPosition;
         const totalDuration = this.player.getDuration();
-        if (Math.abs(displacementCurrentToTarget) >=
+        if (Math.abs(displacementCurrentToTarget) >
           this.intervalMaxSeek) {
           this.seek(
-            currentPosition + 0.95 * this.intervalMaxSeek,
+            currentPosition + this.intervalMaxSeek,
             "compound-seek");
         } else { // final seek:
 
@@ -372,8 +370,6 @@ export class SeekBar extends Component<SeekBarConfig> {
 	this.intervalMaxSeek) {
         console.log("---compound seek");
         this.targetCompoundSeek = targetOfSeek;
-//        this.nextIntervalCompoundSeekBound =
-//          nextIntervalCompoundSeek.bind(sender);
         this.seek(
           (currentPosition + this.intervalMaxSeek) /
             totalDuration * 100, "compound-seek");
@@ -474,28 +470,6 @@ export class SeekBar extends Component<SeekBarConfig> {
     this.timelineMarkersHandler.initialize(player, uimanager);
   }
 
-//  private nextIntervalCompoundSeek(
-//    event: PlayerEventBase): void
-//  { 
-//    const currentPosition = this.player.getCurrentTime();
-//    const displacementCurrentToTarget
-//      = this.targetCompoundSeek - currentPosition;
-//    const totalDuration = this.player.getDuration();
-//    if (Math.abs(displacementCurrentToTarget) >= this.intervalMaxSeek)
-//    {
-//      this.seek(
-//        currentPosition + 0.95 * this.intervalMaxSeek,
-//        "compound-seek");
-//    } else { // final seek:
-//      this.seek(this.targetCompoundSeek/totalDuration * 100,
-//        "compound-seek");
-//      uimanager.onSeeked.dispatch(this);
-//      this.player.off(player.exports.PlayerEvent.Seeked,
-//        this.nextIntervalCompoundSeekBound);
-//      restorePlayingState();
-//    }
-//  }
-
   private seekWhileScrubbing = (sender: SeekBar, args: SeekPreviewEventArgs) => {
     if (args.scrubbing) {
       console.log("---seek args.position", args.position);
@@ -503,7 +477,7 @@ export class SeekBar extends Component<SeekBarConfig> {
 
       // Do the seek
       if (targetOfSeek - this.player.getCurrentTime()
-        > this.intervalMaxSeek) 
+        >= this.intervalMaxSeek) 
         console.log("---scrub: too long --- no seek");
 
       else {
