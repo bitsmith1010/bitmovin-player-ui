@@ -330,26 +330,35 @@ export class SeekBar extends Component<SeekBarConfig> {
     this.onSeekPreview.subscribeRateLimited(this.seekWhileScrubbing, 200);
 
     this.onSeeked.subscribe((sender, percentage) => {
-      console.log("---seeked ui");
+      console.log(`---seeked ui, to ${percentage}% of content`);
       isUserSeeking = false;
       const totalDuration = this.player.getDuration();
       const targetOfSeek = (percentage / 100) * totalDuration;
       const currentPosition = this.player.getCurrentTime();
-
+      const displacementCurrentToTarget =
+        targetOfSeek - currentPosition;
+      const orientation = displacementCurrentToTarget /
+        Math.abs(displacementCurrentToTarget);
 
       const nextIntervalCompoundSeek = (event: PlayerEventBase) =>
       { 
         const currentPosition = this.player.getCurrentTime();
         const displacementCurrentToTarget
           = this.targetCompoundSeek - currentPosition;
+        const orientation = displacementCurrentToTarget /
+          Math.abs(displacementCurrentToTarget);
         const totalDuration = this.player.getDuration();
         if (Math.abs(displacementCurrentToTarget) >
           this.intervalMaxSeek) {
+          console.log("---seek remains:",
+            displacementCurrentToTarget,
+            currentPosition, orientation, this.intervalMaxSeek);
           this.seek(
-            currentPosition + this.intervalMaxSeek,
-            "compound-seek");
+            (currentPosition + orientation * this.intervalMaxSeek) /
+              totalDuration * 100, "compound-seek");
+          //uimanager.onSeeked.dispatch(sender);
         } else { // final seek:
-
+          console.log("---final seek:", this.targetCompoundSeek);
           this.seek(this.targetCompoundSeek/totalDuration * 100,
             "compound-seek");
           uimanager.onSeeked.dispatch(sender);
@@ -357,21 +366,18 @@ export class SeekBar extends Component<SeekBarConfig> {
             nextIntervalCompoundSeek);
           restorePlayingState();
         }
-      }
-
-      // Do the seek
-      const displacementCurrentToTarget =
-        targetOfSeek - currentPosition;
-      const orientation = displacementCurrentToTarget /
-        Math.abs(displacementCurrentToTarget);
+      };
 
       // compound seek:
       if (Math.abs(displacementCurrentToTarget) >
 	this.intervalMaxSeek) {
-        console.log("---compound seek");
+        console.log("---compound seek",
+          String(currentPosition),
+          String(orientation),
+          String(this.intervalMaxSeek));
         this.targetCompoundSeek = targetOfSeek;
         this.seek(
-          (currentPosition + this.intervalMaxSeek) /
+          (currentPosition + orientation * this.intervalMaxSeek) /
             totalDuration * 100, "compound-seek");
         this.player.on(player.exports.PlayerEvent.Seeked,
           nextIntervalCompoundSeek);
